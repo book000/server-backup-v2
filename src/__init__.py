@@ -1,3 +1,4 @@
+import os
 import subprocess
 from datetime import datetime
 
@@ -84,8 +85,12 @@ def get_directory_size(dir_path: str):
     Returns:
         int: ディレクトリのサイズ
     """
+    if not os.path.exists(dir_path):
+        return -1
 
-    result = subprocess.run("du -sb '%s' | awk '{ print $1 }'" % dir_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    command = "du -sb '%s' | awk '{ print $1 }'" % dir_path
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    print("get_directory_size: %s -> %s" % (command, result.stdout.strip()))
     return int(result.stdout.strip())
 
 
