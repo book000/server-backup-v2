@@ -45,7 +45,6 @@ class Config:
         self.FULL_HOSTNAME = self.getValue("full.hostname") if self.FULL_ENABLE else None
         self.FULL_PORT: int = int(self.getValue("full.port")) if self.FULL_ENABLE else None
         self.FULL_USERNAME = self.getValue("full.username") if self.FULL_ENABLE else None
-        self.FULL_PASSWORD = self.getValue("full.password") if self.FULL_ENABLE else None
         self.FULL_IDENTITY = self.getValue("full.identity") if self.FULL_ENABLE else None
         self.FULL_PASSPHRASE = self.getValue("full.passphrase") if self.FULL_ENABLE else None
         self.FULL_FROM = self.getValue("full.from", "/") if self.FULL_ENABLE else None
