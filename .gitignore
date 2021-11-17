@@ -1,0 +1,6 @@
+backup
+logs
+.idea
+venv
+venv_bash
+config.json

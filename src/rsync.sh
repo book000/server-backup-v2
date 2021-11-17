@@ -1,0 +1,40 @@
+#/bin/bash
+usage_exit() {
+    echo "Usage: $0 [-h host] [-r port] [-u user] [-i identity] [-p passphrase] [-w password] [-f from] [-o output]" 1>&2
+    exit 1
+}
+
+while getopts h:r:u:i:p:f:o: OPT
+do
+    case $OPT in
+        h)  HOSTNAME=$OPTARG
+            ;;
+        r)  PORT=$OPTARG
+            ;;
+        u)  USERNAME=$OPTARG
+            ;;
+        i)  IDENTITY=$OPTARG
+            ;;
+        p)  PASSPHRASE=$OPTARG
+            ;;
+        f)  FROM=$OPTARG
+            ;;
+        o)  OUTPUT=$OPTARG
+            ;;
+        \?) usage_exit
+            ;;
+    esac
+done
+TODAY=$(date +%Y-%m-%d)
+
+SSHCMD="rsync -arhvz --progress --compress --delete --backup --exclude-from='ignores' -e 'ssh -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
+expect -c "
+    set timeout 30
+    spawn sh -c \"$SSHCMD\"
+
+    expect \"Enter passphrase for key\" {
+        send \"$PASSPHRASE\n\"
+    }
+
+    interact
+    "
