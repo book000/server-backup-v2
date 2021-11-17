@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 
 import pymysql
@@ -55,10 +56,7 @@ def byte_format(size: int,
     else:
         result = round(result, dec)
 
-    if separate:
-        return f"{result}{unit[unit_index]}"
-    else:
-        return f"{result}"
+    return f"{result}{unit[unit_index]}"
 
 
 def log(file_path: str,
@@ -74,6 +72,21 @@ def log(file_path: str,
     print(f"[{datetime.now()}] {message}")
     with open(file_path, "a") as f:
         f.write(f"[{datetime.now()}] {message}\n")
+
+
+def get_directory_size(dir_path: str):
+    """
+    ディレクトリのサイズを取得します。
+
+    Args:
+        dir_path (str): ディレクトリのパス
+
+    Returns:
+        int: ディレクトリのサイズ
+    """
+
+    result = subprocess.run("du -sb '%s' | awk '{ print $1 }'" % dir_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    return int(result.stdout.strip())
 
 
 def send_discord_message(token: str, channelId: str, message: str = "", embed: dict = None):

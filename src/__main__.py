@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
 
-from src import byte_format, get_connection, log, notify, send_discord_message
+from src import byte_format, get_connection, get_directory_size, log, notify, send_discord_message
 from src.config import Config
 
 
@@ -192,8 +192,13 @@ class FullBackup(BaseBackup):
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
 
         log(LOG_FILE, "[INFO] Backup finished.")
+        latest_size = get_directory_size(os.path.join(BACKUP_DIR, "latest"))
+        today_size = get_directory_size(os.path.join(BACKUP_DIR, TODAY))
 
-        notify(config, ":o: Backup complete!", 0x008000)
+        notify(config, ":o: Backup complete!", 0x008000, "Today size: {0}\nLatest size: {1}".format(
+            byte_format(today_size, 2),
+            byte_format(latest_size, 2)
+        ))
 
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
