@@ -189,6 +189,8 @@ class FullBackup(BaseBackup):
             notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
             exit(1)
 
+        os.unlink(os.path.join(BACKUP_DIR, "/ignores"))
+
         log(LOG_FILE, "[INFO] Backup finished.")
 
         notify(config, ":o: Backup complete!", 0x008000)
