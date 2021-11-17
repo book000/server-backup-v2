@@ -1,7 +1,10 @@
 from datetime import datetime
 
 import pymysql
+import requests as requests
 from pymysql import cursors
+
+from src.config import Config
 
 
 def get_connection(hostname: str,
@@ -71,3 +74,34 @@ def log(file_path: str,
     print(f"[{datetime.now()}] {message}")
     with open(file_path, "a") as f:
         f.write(f"[{datetime.now()}] {message}\n")
+
+
+def send_discord_message(token: str, channelId: str, message: str = "", embed: dict = None):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bot {token}".format(token=token),
+        "User-Agent": "Bot"
+    }
+    params = {
+        "content": message,
+        "embed": embed
+    }
+    response = requests.post(
+        "https://discord.com/api/channels/{channelId}/messages".format(channelId=channelId), headers=headers,
+        json=params)
+    print("[DEBUG] response: {code}".format(code=response.status_code))
+    print("[DEBUG] response: {message}".format(message=response.text))
+
+
+def notify(_config: Config, title: str, color: int, message: str = None):
+    embed = {
+        "title": title,
+        "color": color,
+    }
+    if message is not None:
+        embed["description"] = message
+    if _config.DISCORD_FOOTER is not None:
+        embed["footer"] = {
+            "text": _config.DISCORD_FOOTER
+        }
+    send_discord_message(_config.DISCORD_TOKEN, _config.DISCORD_CHANNEL, "", embed)

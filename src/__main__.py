@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
 
-from src import byte_format, get_connection, log
+from src import byte_format, get_connection, log, notify, send_discord_message
 from src.config import Config
 
 
@@ -61,6 +61,7 @@ class DBBackup(BaseBackup):
             with connection.cursor(cursor=DictCursor) as cursor:
                 if not connection.open:
                     log(LOG_FILE, "[Error] Failed to connect to the database.")
+                    notify(config, ":x: Backup failed.", 0xFF0000, "Failed to connect to the database.")
                     exit(1)
 
                 cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES")
@@ -75,6 +76,7 @@ class DBBackup(BaseBackup):
                 connection.close()
             log(LOG_FILE, "Error: Database operation failed. (MySQLError)")
             log(LOG_FILE, e.args.__str__())
+            notify(config, ":x: Backup failed.", 0xFF0000, "Database operation failed.")
             exit(1)
 
         log(LOG_FILE, "[INFO] Creating conf file.")
@@ -90,12 +92,12 @@ class DBBackup(BaseBackup):
         log(LOG_FILE, "[INFO] Starting backup")
         all_size = 0
         count = 0
+        error = False
         for database in databases:
             log(LOG_FILE, "[INFO] Database: %s" % database)
             for table in databases[database]:
                 log(LOG_FILE, "[INFO] Table: %s" % table)
                 backup_path = os.path.join(BACKUP_DIR, database + "-" + table + ".sql.gz")
-                print(backup_path)
                 command = "mysqldump --defaults-file={0} --single-transaction {1} {2} | gzip > {3}".format(
                     os.path.join(BACKUP_DIR, "conf"),
                     database,
@@ -105,7 +107,11 @@ class DBBackup(BaseBackup):
                 result = subprocess.run(command, shell=True)
                 if result.returncode != 0:
                     log(LOG_FILE, "[Error] Backup failed.")
-                    exit(1)
+                    notify(config, ":x: Backup failed.", 0xFF0000, "mysqldump command failed. ({0})".format(
+                        database + "-" + table
+                    ))
+                    error = True
+                    continue
 
                 filesize = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
                 filesize_formatted = byte_format(filesize, 2)
@@ -116,7 +122,17 @@ class DBBackup(BaseBackup):
                 all_size += filesize
 
         os.unlink(os.path.join(BACKUP_DIR, "conf"))
+
+        if error:
+            log(LOG_FILE, "[INFO] One of the backups failed.")
+            exit(1)
+
         log(LOG_FILE, "[INFO] Backup finished.")
+
+        notify(config, ":o: Backup complete!", 0x008000, "Table count: {0}\nSize: {1}".format(
+            count,
+            byte_format(all_size, 2)
+        ))
 
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
@@ -170,9 +186,12 @@ class FullBackup(BaseBackup):
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
             log(LOG_FILE, "[Error] Backup failed.")
+            notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
             exit(1)
 
         log(LOG_FILE, "[INFO] Backup finished.")
+
+        notify(config, ":o: Backup complete!", 0x008000)
 
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")

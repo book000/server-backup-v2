@@ -12,6 +12,7 @@ class Config:
         # 通知用 Discord Bot 設定
         self.DISCORD_TOKEN = self.getValue("discord.token")
         self.DISCORD_CHANNEL = self.getValue("discord.channel")
+        self.DISCORD_FOOTER = self.getValue("discord.footer", None)
 
         # バックアップ用とログ用のディレクトリ
         self.BACKUP_DIR = self.getValue("dir.backup", "backup/")
