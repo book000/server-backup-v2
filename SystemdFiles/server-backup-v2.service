@@ -1,0 +1,15 @@
+[Unit]
+Description=server-backup-v2
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=%WorkingDirectory%
+ExecStartPre=/usr/bin/git pull
+ExecStart=%WorkingDirectory%/venv/bin/python -m src
+Restart=no
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

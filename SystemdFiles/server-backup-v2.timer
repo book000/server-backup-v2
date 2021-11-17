@@ -1,0 +1,9 @@
+[Unit]
+Description=server-backup-v2
+
+[Timer]
+Unit=server-backup-v2.service
+OnCalendar=*-*-* 08:00:00
+
+[Install]
+WantedBy=timers.target

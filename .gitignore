@@ -4,3 +4,4 @@ logs
 venv
 venv_bash
 config.json
+*.pyc
