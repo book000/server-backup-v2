@@ -49,7 +49,7 @@ class Config:
         self.FULL_IDENTITY = self.getValue("full.identity") if self.FULL_ENABLE else None
         self.FULL_PASSPHRASE = self.getValue("full.passphrase") if self.FULL_ENABLE else None
         self.FULL_FROM = self.getValue("full.from", "/") if self.FULL_ENABLE else None
-        self.IGNORES: list[str] = self.getValue("full.ignores", []) if self.FULL_ENABLE else None
+        self.FULL_IGNORES: list[str] = self.getValue("full.ignores", []) if self.FULL_ENABLE else None
 
     def getValue(self,
                  _key: str,

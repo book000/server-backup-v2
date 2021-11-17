@@ -177,7 +177,7 @@ class FullBackup(BaseBackup):
 
         log(LOG_FILE, "[INFO] Creating ignores file.")
         with open(os.path.join(BACKUP_DIR, "/ignores"), "w") as f:
-            f.write("\n".join(config.IGNORES))
+            f.write("\n".join(config.FULL_IGNORES))
         log(LOG_FILE, "[INFO] Created.")
 
         log(LOG_FILE, "[INFO] Starting backup")
