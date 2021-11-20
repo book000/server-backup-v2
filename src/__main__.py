@@ -181,7 +181,7 @@ class FullBackup(BaseBackup):
         log(LOG_FILE, "[INFO] Created.")
 
         log(LOG_FILE, "[INFO] Starting backup")
-        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' -i '{config.FULL_IDENTITY}' -p '{config.FULL_PASSPHRASE}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee {LOG_FILE}"
+        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' -i '{config.FULL_IDENTITY}' -p '{config.FULL_PASSPHRASE}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE}"
         print(command)
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
