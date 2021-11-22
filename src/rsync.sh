@@ -32,9 +32,18 @@ expect -c "
     set timeout 30
     spawn sh -c \"$SSHCMD\"
 
-    expect \"Enter passphrase for key\" {
-        send \"$PASSPHRASE\n\"
+    expect {
+        -glob \"(yes/no)?\" {
+            send \"yes\n\"
+            exp_continue
+        }
+        -glob \"Enter passphrase for key\" {
+            send -- \"${$PASSPHRASE}\n\"
+        }
     }
 
-    interact
+    expect \"total size is\" {
+        interact
+        exit 0
+    }
     "
