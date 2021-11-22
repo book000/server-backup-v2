@@ -38,7 +38,7 @@ expect -c "
             exp_continue
         }
         -glob \"Enter passphrase for key\" {
-            send -- \"${$PASSPHRASE}\n\"
+            send -- \"$PASSPHRASE\n\"
         }
     }
 
