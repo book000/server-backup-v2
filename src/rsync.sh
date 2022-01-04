@@ -31,12 +31,14 @@ SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclu
 expect -c "
     log_file /var/log/expect.log
     exp_internal 1
-    set timeout 30
+    set timeout -1
     spawn sh -c \"$SSHCMD\"
     expect {
         \"Enter passphrase for key\" {
             send -- \"$PASSPHRASE\n\"
         }
+    }
+    expect {
         \"total size is\" {
             interact
             expect eof
