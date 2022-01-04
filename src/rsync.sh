@@ -35,6 +35,5 @@ expect -c "
     expect \"Enter passphrase for key\" {
         send \"$PASSPHRASE\n\"
     }
-    interact
     "
 echo rsync.sh end
