@@ -27,7 +27,7 @@ do
 done
 TODAY=$(date +%Y-%m-%d)
 
-SSHCMD="rsync -arhvz --progress --compress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
+SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
 expect -c "
     set timeout 30
     spawn sh -c \"$SSHCMD\"
@@ -42,8 +42,5 @@ expect -c "
         }
     }
 
-    expect \"total size is\" {
-        interact
-        exit 0
-    }
+    interact
     "
