@@ -40,11 +40,9 @@ expect -c "
         -glob \"Enter passphrase for key\" {
             send -- \"$PASSPHRASE\n\"
         }
-    }
-
-    expect {
         "\\\$" {
             exit 0
         }
     }
     "
+echo rsync.sh end
