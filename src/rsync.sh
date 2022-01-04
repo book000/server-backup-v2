@@ -42,6 +42,9 @@ expect -c "
         }
     }
 
-    expect eof
-    catch wait result
+    expect {
+        "\\\$" {
+            exit 0
+        }
+    }
     "
