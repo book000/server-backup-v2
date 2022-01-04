@@ -27,22 +27,14 @@ do
 done
 TODAY=$(date +%Y-%m-%d)
 
-SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
+SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -o StrictHostKeyChecking=no -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
 expect -c "
-    set timeout 30
+    set timeout 60
     spawn sh -c \"$SSHCMD\"
 
-    expect {
-        -glob \"(yes/no)?\" {
-            send \"yes\n\"
-            exp_continue
-        }
-        -glob \"Enter passphrase for key\" {
-            send -- \"$PASSPHRASE\n\"
-        }
-        "\\\$" {
-            exit 0
-        }
+    expect \"Enter passphrase for key\" {
+        send \"$PASSPHRASE\n\"
     }
+    interact
     "
 echo rsync.sh end
