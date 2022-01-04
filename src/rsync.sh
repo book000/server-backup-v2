@@ -42,5 +42,7 @@ expect -c "
         }
     }
 
-    interact
+    expect \"total size is\" {
+         interact
+     }
     "
