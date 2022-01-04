@@ -44,5 +44,7 @@ expect -c "
 
     expect \"total size is\" {
          interact
+         expect eof
+         catch wait result
      }
     "
