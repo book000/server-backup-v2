@@ -29,6 +29,8 @@ TODAY=$(date +%Y-%m-%d)
 
 SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -o StrictHostKeyChecking=no -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
 expect -c "
+    log_file /var/log/expect.log
+    exp_internal 1
     set timeout 30
     spawn sh -c \"$SSHCMD\"
     expect {
