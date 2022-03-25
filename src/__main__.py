@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
 
-from src import byte_format, get_connection, get_directory_size, log, notify, send_discord_message
+from src import byte_format, get_connection, get_directory_size, log, notify
 from src.config import Config
 
 
@@ -47,6 +47,11 @@ class DBBackup(BaseBackup):
         if not config.DB_ENABLE:
             log(LOG_FILE, "[INFO] DBBackup is disabled")
             return
+
+        command = "ls -l | awk '{ print $9 }' | tail -n 1"
+        result = subprocess.run(command, cwd=BACKUP_DIR, shell=True)
+        prev_date = None if result.returncode == 0 else result.stdout.decode("utf-8").strip()  # 前回バックアップした日付 (なければNone)
+        log(LOG_FILE, "[INFO] PrevDate: {}".format(prev_date))
 
         log(LOG_FILE, "[INFO] Fetch databases & tables")
         databases = {}
@@ -112,6 +117,16 @@ class DBBackup(BaseBackup):
                     ))
                     error = True
                     continue
+
+                if prev_date is not None:
+                    diff_result = subprocess.run("zdiff -q --ignore-matching-lines=\"Dump completed\" {0} {1}".format(
+                        os.path.join(BACKUP_DIR, prev_date),
+                        backup_path
+                    ))
+                    if diff_result.returncode == 0:
+                        log(LOG_FILE, "[Info] Backup skipped. (No difference)")
+                        os.remove(backup_path)
+                        continue
 
                 filesize = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
                 filesize_formatted = byte_format(filesize, 2)
@@ -190,6 +205,16 @@ class FullBackup(BaseBackup):
             exit(1)
 
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
+
+        command = "tar cvf {0} {1}".format(
+            os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
+            os.path.join(BACKUP_DIR, TODAY)
+        )
+        result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
+        if result.returncode != 0:
+            log(LOG_FILE, "[Error] Backup failed.")
+            notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
+            exit(1)
 
         log(LOG_FILE, "[INFO] Backup finished.")
         latest_size = get_directory_size(os.path.join(BACKUP_DIR, "latest"))
