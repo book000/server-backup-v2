@@ -39,6 +39,9 @@ The default config file is `config.json`. If not specified, string type and requ
   - `port`: DB Port number
   - `username`: DB Username
   - `password`: DB Password
+  - `ignores`: Ignore settings
+    - `db`: Database name to exclude if included (list、Default: [])
+    - `table`: Table name to exclude if included (list、Default: [])
 - `full`: Full backup settings
   - `enable`: If enable full backup (boolean、Default: false)
   - `keep_days`: Number of days to keep the backup (int、Default: 30)

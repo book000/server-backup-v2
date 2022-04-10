@@ -38,6 +38,8 @@ class Config:
         self.DB_PORT: int = int(self.getValue("db.port")) if self.DB_ENABLE else None
         self.DB_USERNAME = self.getValue("db.username") if self.DB_ENABLE else None
         self.DB_PASSWORD = self.getValue("db.password") if self.DB_ENABLE else None
+        self.DB_IGNORES: list[str] = self.getValue("db.ignores.db", []) if self.DB_ENABLE else None
+        self.DB_TABLE_IGNORES: list[str] = self.getValue("db.ignores.table", []) if self.DB_ENABLE else None
 
         # 全体ディレクトリ/ファイルバックアップ (SSH)
         self.FULL_ENABLE: bool = bool(self.getValue("full.enable", False))

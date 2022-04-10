@@ -100,8 +100,19 @@ class DBBackup(BaseBackup):
         error = False
         for database in databases:
             log(LOG_FILE, "[INFO] Database: %s" % database)
+
+            if next(filter(lambda x: database in x, config.DB_IGNORES), None) is not None:
+                log(LOG_FILE, "[INFO] Ignored: %s" % next(filter(lambda x: database in x, config.DB_IGNORES), None))
+                continue
+
             for table in databases[database]:
                 log(LOG_FILE, "[INFO] Table: %s" % table)
+
+                if next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None) is not None:
+                    log(LOG_FILE,
+                        "[INFO] Ignored: %s" % next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None))
+                    continue
+
                 backup_path = os.path.join(BACKUP_DIR, database + "-" + table + ".sql.gz")
                 command = "mysqldump --defaults-file={0} --single-transaction {1} {2} | gzip > {3}".format(
                     os.path.join(BACKUP_DIR, "conf"),
