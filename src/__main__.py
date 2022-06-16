@@ -219,12 +219,12 @@ class FullBackup(BaseBackup):
 
         command = "tar cvf {0} {1}".format(
             os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
-            os.path.join(BACKUP_DIR, TODAY)
+            os.path.join(BACKUP_DIR, TODAY + "/")
         )
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
             log(LOG_FILE, "[Error] Backup failed.")
-            notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
+            notify(config, ":x: Backup failed.", 0xFF0000, "tar command failed.")
             exit(1)
 
         log(LOG_FILE, "[INFO] Backup finished.")
