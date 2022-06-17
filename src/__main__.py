@@ -211,19 +211,20 @@ class FullBackup(BaseBackup):
         print(command)
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
-            log(LOG_FILE, "[Error] Backup failed.")
+            log(LOG_FILE, "[Error] Backup (rsync) failed.")
             notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
             exit(1)
 
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
 
-        command = "tar --remove-file -cvf {0} {1}".format(
+        command = "tar --remove-file -cvf {0} {1} 2>&1 | tee -a {2}".format(
             os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
-            os.path.join(BACKUP_DIR, TODAY + "/")
+            os.path.join(BACKUP_DIR, TODAY + "/"),
+            LOG_FILE
         )
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
-            log(LOG_FILE, "[Error] Backup failed.")
+            log(LOG_FILE, "[Error] Backup (tar) failed.")
             notify(config, ":x: Backup failed.", 0xFF0000, "tar command failed.")
             exit(1)
 
