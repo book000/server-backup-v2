@@ -217,7 +217,7 @@ class FullBackup(BaseBackup):
 
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
 
-        command = "tar --remove-file cvf {0} {1}".format(
+        command = "tar --remove-file -cvf {0} {1}".format(
             os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
             os.path.join(BACKUP_DIR, TODAY + "/")
         )
