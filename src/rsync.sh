@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 usage_exit() {
     echo "Usage: $0 [-h host] [-r port] [-u user] [-i identity] [-p passphrase] [-w password] [-f from] [-o output]" 1>&2
     exit 1
