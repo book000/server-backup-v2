@@ -217,6 +217,8 @@ class FullBackup(BaseBackup):
 
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
 
+        today_size = get_directory_size(os.path.join(BACKUP_DIR, TODAY))
+
         command = "tar --remove-file -cvf {0} {1} 2>&1 | tee -a {2}".format(
             os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
             os.path.join(BACKUP_DIR, TODAY + "/"),
@@ -230,10 +232,11 @@ class FullBackup(BaseBackup):
 
         log(LOG_FILE, "[INFO] Backup finished.")
         latest_size = get_directory_size(os.path.join(BACKUP_DIR, "latest"))
-        today_size = get_directory_size(os.path.join(BACKUP_DIR, TODAY))
+        today_tar_size = os.path.getsize(os.path.join(BACKUP_DIR, TODAY + ".tar.gz"))
 
-        notify(config, ":o: Backup complete!", 0x008000, "Today size: {0}\nLatest size: {1}".format(
+        notify(config, ":o: Backup complete!", 0x008000, "Today size: {0} (tar.gz: {1})\nLatest size: {2}".format(
             byte_format(today_size, 2),
+            byte_format(today_tar_size, 2),
             byte_format(latest_size, 2)
         ))
 
