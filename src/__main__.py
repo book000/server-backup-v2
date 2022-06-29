@@ -246,12 +246,18 @@ class FullBackup(BaseBackup):
             if len(file) != 10:
                 continue
             file_path = os.path.join(BACKUP_DIR, file)
+            if os.path.isfile(file_path) and file.endswith(".tar.gz"):
+                file_date = datetime.strptime(file, "%Y-%m-%d.tar.gz")
+                if file_date >= datetime.now() - timedelta(days=config.FULL_KEEP_DAYS):
+                    continue
+                log(LOG_FILE, "[INFO] Deleting file %s" % file)
+                os.remove(file_path)
             if not os.path.isdir(file_path):
                 continue
             file_date = datetime.strptime(file, "%Y-%m-%d")
             if file_date >= datetime.now() - timedelta(days=config.FULL_KEEP_DAYS):
                 continue
-            log(LOG_FILE, "[INFO] Deleting %s" % file)
+            log(LOG_FILE, "[INFO] Deleting dir %s" % file)
             shutil.rmtree(file_path)
 
         log(LOG_FILE, "[INFO] Deleted expired files")
