@@ -1,5 +1,6 @@
-backup
-logs
+backups/
+logs/
+configs/
 .idea
 venv
 venv_bash

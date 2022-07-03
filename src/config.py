@@ -9,13 +9,21 @@ class Config:
     def __init__(self, filename: str = "config.json"):
         self.filename = filename
 
+        self.NAME = self.getValue("name")
+        if self.NAME is None or self.NAME == "":
+            print("[ERROR] name is not defined.")
+            exit(1)
+        if self.NAME.find(" ") != -1 or self.NAME.find("/") != -1:
+            print("[ERROR] name cannot contain ' ' or '/'.")
+            exit(1)
+
         # 通知用 Discord Bot 設定
         self.DISCORD_TOKEN = self.getValue("discord.token")
         self.DISCORD_CHANNEL = self.getValue("discord.channel")
         self.DISCORD_FOOTER = self.getValue("discord.footer", None)
 
         # バックアップ用とログ用のディレクトリ
-        self.BACKUP_DIR = self.getValue("dir.backup", "backup/")
+        self.BACKUP_DIR = self.getValue("dir.backup", "/data/backups/{0}/".format(self.NAME))
         if not self.BACKUP_DIR.endswith("/"):
             self.BACKUP_DIR += "/"
         if not os.path.isabs(self.BACKUP_DIR):
@@ -23,7 +31,7 @@ class Config:
         if not os.path.exists(self.BACKUP_DIR):
             os.makedirs(self.BACKUP_DIR)
 
-        self.LOG_DIR = self.getValue("dir.logs", "logs/")
+        self.LOG_DIR = self.getValue("dir.logs", "/data/logs/{0}/".format(self.NAME))
         if not self.LOG_DIR.endswith("/"):
             self.LOG_DIR += "/"
         if not os.path.isabs(self.LOG_DIR):

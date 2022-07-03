@@ -113,7 +113,9 @@ class DBBackup(BaseBackup):
                         "[INFO] Ignored: %s" % next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None))
                     continue
 
-                backup_path = os.path.join(BACKUP_DIR, database + "-" + table + ".sql.gz")
+                backup_path = os.path.join(BACKUP_DIR, database, + table + ".sql.gz")
+                if not os.path.exists(os.path.dirname(backup_path)):
+                    os.makedirs(os.path.dirname(backup_path))
                 command = "mysqldump --defaults-file={0} --single-transaction {1} {2} | gzip > {3}".format(
                     os.path.join(BACKUP_DIR, "conf"),
                     database,
@@ -207,7 +209,8 @@ class FullBackup(BaseBackup):
         log(LOG_FILE, "[INFO] Created.")
 
         log(LOG_FILE, "[INFO] Starting backup")
-        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' -i '{config.FULL_IDENTITY}' -p '{config.FULL_PASSPHRASE}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE}"
+        identity_arg = "" if config.FULL_IDENTITY is None else f"-i '{config.FULL_IDENTITY}'"
+        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' {identity_arg} -p '{config.FULL_PASSPHRASE}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE} "
         print(command)
         result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
         if result.returncode != 0:

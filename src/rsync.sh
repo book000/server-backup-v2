@@ -27,6 +27,10 @@ do
 done
 TODAY=$(date +%Y-%m-%d)
 
+mkdir -p "${OUTPUT}/$TODAY"
+
+chmod 600 "${IDENTITY}"
+
 SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -o StrictHostKeyChecking=no -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
 expect -c "
     set timeout -1

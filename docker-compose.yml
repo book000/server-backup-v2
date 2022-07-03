@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  server-backup-v2:
+    build: ./
+    volumes:
+      - type: bind
+        source: ./backups/
+        target: /data/backups/
+      - type: bind
+        source: ./logs/
+        target: /data/logs/
+      - type: bind
+        source: ./configs/config.json
+        target: /data/config.json
+      - type: bind
+        source: ./configs/keys/id_rsa
+        target: /data/keys/identity-file
+
