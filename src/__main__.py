@@ -113,7 +113,7 @@ class DBBackup(BaseBackup):
                         "[INFO] Ignored: %s" % next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None))
                     continue
 
-                backup_path = os.path.join(BACKUP_DIR, database, + table + ".sql.gz")
+                backup_path = os.path.join(BACKUP_DIR, database, table + ".sql.gz")
                 if not os.path.exists(os.path.dirname(backup_path)):
                     os.makedirs(os.path.dirname(backup_path))
                 command = "mysqldump --defaults-file={0} --single-transaction {1} {2} | gzip > {3}".format(
