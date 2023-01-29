@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-if [ -z "$CONFIG_LOCATION" ]; then
+if [ -z "${CONFIG_LOCATION}" ]; then
     CONFIG_LOCATION="/data/config.json"
 fi
 
