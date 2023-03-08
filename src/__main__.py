@@ -77,12 +77,13 @@ class DBBackup(BaseBackup):
                         databases[result["TABLE_SCHEMA"]] = []
                     databases[result["TABLE_SCHEMA"]].append(result["TABLE_NAME"])
         except MySQLError as e:
-            if connection is not None:
-                connection.close()
             log(LOG_FILE, "Error: Database operation failed. (MySQLError)")
             log(LOG_FILE, e.args.__str__())
             notify(config, ":x: Backup failed.", 0xFF0000, "Database operation failed.")
             exit(1)
+        finally:
+            if connection is not None:
+                connection.close()
 
         log(LOG_FILE, "[INFO] Creating conf file.")
         with open(os.path.join(BACKUP_DIR, "conf"), "w") as f:
