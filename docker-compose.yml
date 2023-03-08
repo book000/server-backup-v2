@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   server-backup-v2:
-    build: ./
+    build: .
     volumes:
       - type: bind
         source: ./backups/
