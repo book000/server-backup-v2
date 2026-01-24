@@ -1,8 +1,7 @@
 # GitHub Copilot Instructions
 
 ## プロジェクト概要
-- 目的: [日本語の README はこちらから](README-ja.md)
-- 主な機能: `DBBackup`: Database backup for MySQL and MariaDB / `FullBackup`: Reverse differential full backup using SSH and rsync
+Linux サーバーの定期バックアップツール。MySQL/MariaDB のデータベースバックアップと SSH/rsync を使用したフルバックアップを実行します。
 
 ## 共通ルール
 - 会話は日本語で行う。
@@ -12,8 +11,8 @@
 - 既存のプロジェクトルールがある場合はそれを優先する。
 
 ## 技術スタック
-- 言語: Python
-- パッケージマネージャー: pnpm 優先（ロックファイルに従う）。
+- 言語: Python 3.9+
+- パッケージマネージャー: pip
 
 ## コーディング規約
 - フォーマット: 既存設定（ESLint / Prettier / formatter）に従う。
@@ -24,12 +23,11 @@
 - TypeScript 使用時は strict 前提とし、`skipLibCheck` で回避しない。
 - 関数やインターフェースには docstring（JSDoc など）を記載する。
 
-## 開発コマンド
+### 開発コマンド
 ```bash
-# 依存関係のインストール
-pip install -r requirements.txt
+# install
+pip install -U -r requirements.txt
 
-# 開発 / テスト / Lint は README を確認してください
 ```
 
 ## テスト方針
@@ -40,5 +38,12 @@ pip install -r requirements.txt
 - ログに機密情報を出力しない。
 
 ## ドキュメント更新
+- 実装確定後、同一コミットまたは追加コミットで更新する。
+- README、API ドキュメント、コメント等は常に最新状態を保つ。
 
 ## リポジトリ固有
+- Discord 通知機能
+- MySQL データベースバックアップ
+- SSH キーベース認証
+- systemd サービス統合
+- Docker コンテナ対応

@@ -15,8 +15,16 @@
 - 日本語と英数字の間には半角スペースを入れる。
 
 ## プロジェクト概要
-- 目的: [日本語の README はこちらから](README-ja.md)
-- 主な機能: `DBBackup`: Database backup for MySQL and MariaDB / `FullBackup`: Reverse differential full backup using SSH and rsync
+Linux サーバーの定期バックアップツール。MySQL/MariaDB のデータベースバックアップと SSH/rsync を使用したフルバックアップを実行します。
+
+### 技術スタック
+- **言語**: Python 3.9+
+- **フレームワーク**: None (CLI tool)
+- **パッケージマネージャー**: pip
+- **主要な依存関係**:
+  - PyMySQL 1.1.2
+  - requests 2.32.5
+  - setuptools 80.10.1
 
 ## コーディング規約
 - フォーマット: 既存設定（ESLint / Prettier / formatter）に従う。
@@ -24,12 +32,11 @@
 - コメント言語: 日本語
 - エラーメッセージ: 英語
 
-## 開発コマンド
+### 開発コマンド
 ```bash
-# 依存関係のインストール
-pip install -r requirements.txt
+# install
+pip install -U -r requirements.txt
 
-# 開発 / テスト / Lint は README を確認してください
 ```
 
 ## 注意事項
@@ -38,3 +45,8 @@ pip install -r requirements.txt
 - 既存のプロジェクトルールがある場合はそれを優先する。
 
 ## リポジトリ固有
+- Discord 通知機能
+- MySQL データベースバックアップ
+- SSH キーベース認証
+- systemd サービス統合
+- Docker コンテナ対応
