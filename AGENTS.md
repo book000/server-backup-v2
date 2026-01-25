@@ -38,7 +38,7 @@
 - **主な機能**:
   - DBBackup: MySQL/MariaDB データベースの差分バックアップ
   - FullBackup: SSH と rsync による逆差分フルバックアップ
-  - Discord Webhook 経由での成功・失敗通知
+  - Discord Bot 経由での成功・失敗通知
   - バックアップ保持期間に基づく古いバックアップの自動削除
 - **技術スタック**:
   - 言語: Python 3.9+

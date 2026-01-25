@@ -23,14 +23,14 @@
 - **主な機能**:
   - DBBackup: MySQL/MariaDB データベースの差分バックアップ
   - FullBackup: SSH と rsync による逆差分フルバックアップ
-  - Discord Webhook 経由での成功・失敗通知
+  - Discord Bot 経由での成功・失敗通知
   - バックアップ保持期間に基づく古いバックアップの自動削除
 - **ライセンス**: MIT License (Copyright 2021 Tomachi)
 - **リポジトリ**: https://github.com/book000/server-backup-v2
 
 ## 重要ルール
 
-- **会話言語**: 最終的なユーザーへの回答は日本語で行う。途中経過は、コンテキスト削減のため主要・重要なところ以外は英語で説明する。
+- **会話言語**: 最終的なユーザーへの回答は日本語で行う。
 - **コード内コメント**: 日本語で記載する。
 - **エラーメッセージ**: 原則英語で記載する。
 - **日本語と英数字の間**: 半角スペースを挿入しなければならない。
@@ -161,8 +161,8 @@ server-backup-v2/
 ### 推奨パターン
 
 - **ログ出力**: `log(LOG_FILE, "[INFO] メッセージ")` を使用
-- **Discord 通知**: `notify(config, "メッセージ")` を使用
-- **データベース接続**: `get_connection(config)` でコネクションプールを取得
+- **Discord 通知**: `notify("タイトル", "色", "メッセージ")` を使用
+- **データベース接続**: `get_connection(hostname, port, username, password)` でコネクションプールを取得
 - **ディレクトリ作成**: `os.makedirs(path)` で必要に応じてディレクトリを作成
 - **バックアップファイル命名**: `YYYY-MM-DD` 形式の日付を使用
 
