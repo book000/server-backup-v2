@@ -101,6 +101,7 @@ server-backup-v2/
 ├── .github/workflows/           # GitHub Actions ワークフロー
 ├── Dockerfile                   # コンテナイメージ定義
 ├── requirements.txt             # Python 依存関係
+├── README.md                    # 英語ドキュメント
 └── README-ja.md                 # 日本語ドキュメント
 ```
 
