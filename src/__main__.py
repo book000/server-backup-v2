@@ -223,7 +223,7 @@ class FullBackup(BaseBackup):
 
         today_size = get_directory_size(os.path.join(BACKUP_DIR, TODAY))
 
-        command = "tar --remove-file -cvf {0} {1} 2>&1 | tee -a {2}".format(
+        command = "tar --remove-file -czvf {0} {1} 2>&1 | tee -a {2}".format(
             os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
             os.path.join(BACKUP_DIR, TODAY + "/"),
             LOG_FILE
