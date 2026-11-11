@@ -14,10 +14,16 @@ def get_connection(hostname: str,
                    username: str,
                    password: str):
     """
-    DBへのコネクションを取得します。
+    Open a connection to the database server.
+
+    Args:
+        hostname (str): Database host name
+        port (int): Database port
+        username (str): Database user name
+        password (str): Database password
 
     Returns:
-        Connection: コネクション
+        Connection: PyMySQL connection using ``DictCursor``. The caller must close it.
     """
 
     return pymysql.connect(
@@ -33,15 +39,15 @@ def byte_format(size: int,
                 dec=-1,
                 separate=False):
     """
-    数値をバイト数のフォーマットにします。
+    Format a byte count as a human-readable string using 1024-based units.
 
     Args:
-        size (int): フォーマットする数値
-        dec (int, optional): 小数点以下の桁数. Defaults to -1.
-        separate (bool, optional): 単位を分けるかどうか. Defaults to False.
+        size (int): Number of bytes
+        dec (int, optional): Number of decimal places. -1 truncates to an integer. Defaults to -1.
+        separate (bool, optional): Unused. Defaults to False.
 
     Returns:
-        str: フォーマットされた文字列
+        str: Formatted string such as ``1.5MB`` (no space between value and unit)
     """
 
     unit = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
@@ -63,11 +69,11 @@ def byte_format(size: int,
 def log(file_path: str,
         message: str):
     """
-    ログをファイルに書き込みます。
+    Print a timestamped message to stdout and append it to the log file.
 
     Args:
-        file_path (str): ファイルパス
-        message (str): 書き込むメッセージ
+        file_path (str): Log file path
+        message (str): Message to write
     """
 
     print(f"[{datetime.now()}] {message}")
@@ -77,13 +83,13 @@ def log(file_path: str,
 
 def get_directory_size(dir_path: str):
     """
-    ディレクトリのサイズを取得します。
+    Get the size of a directory in bytes using ``du -sb``.
 
     Args:
-        dir_path (str): ディレクトリのパス
+        dir_path (str): Directory path
 
     Returns:
-        int: ディレクトリのサイズ
+        int: Size in bytes, or -1 if the directory does not exist
     """
     if not os.path.exists(dir_path):
         return -1
@@ -95,6 +101,15 @@ def get_directory_size(dir_path: str):
 
 
 def send_discord_message(token: str, channelId: str, message: str = "", embed: dict = None):
+    """
+    Post a message to a Discord channel with the Bot token. The response is only printed.
+
+    Args:
+        token (str): Discord Bot token
+        channelId (str): Target channel ID
+        message (str, optional): Message text. Defaults to "".
+        embed (dict, optional): Embed object. Defaults to None.
+    """
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bot {token}".format(token=token),
@@ -112,6 +127,15 @@ def send_discord_message(token: str, channelId: str, message: str = "", embed: d
 
 
 def notify(_config: Config, title: str, color: int, message: str = None):
+    """
+    Send an embed notification to the configured Discord channel.
+
+    Args:
+        _config (Config): Loaded configuration
+        title (str): Embed title
+        color (int): Embed color (for example ``0x008000`` for success, ``0xFF0000`` for failure)
+        message (str, optional): Embed description. Defaults to None.
+    """
     embed = {
         "title": title,
         "color": color,

@@ -1,87 +1,147 @@
 # server-backup-v2
 
-[Click here for English README](README.md)
+[English README](README.md)
 
-Linux サーバのバックアップを定期的に行うためのツールです。[book000/server-backup](https://github.com/book000/server-backup) を Python3 で書き直し他でも流用しやすくしたものです。
+Linux サーバのバックアップを定期的に行うためのツールです。[book000/server-backup](https://github.com/book000/server-backup) を Python 3 で書き直し、他でも流用しやすくしたものです。
+
+英語版の [README.md](README.md) が正本で、このファイルはその日本語訳です。
 
 ## Features
 
-- `DBBackup`: MySQL や MariaDB のデータベースバックアップ
-- `FullBackup`: SSH と rsync を用いた逆差分フルバックアップ
+- `DBBackup`: MySQL / MariaDB のテーブル単位のダンプ (`mysqldump` を `gzip` に渡す)
+- `FullBackup`: SSH と rsync を用いた、リモートサーバの逆差分フルバックアップ
+- Discord Bot による、成功・失敗の通知
 
 ## Requirements
 
-- 有効な Discord Botトークンと書き込み可能なメッセージチャネル
-- Python 3.9+
-- [requirements.txt](requirements.txt): `PyMySQL`
+- Discord Bot のトークンと、Bot が書き込み可能なチャンネル
+- Python 3.9+ と [requirements.txt](requirements.txt) のパッケージ (`PyMySQL`, `requests`, `setuptools`)
+- ツールを実行するマシンに `mysqldump`, `gzip`, `tar`, `du`, `rsync`, `ssh`, `expect`。ベースイメージに含まれないものは [Dockerfile](Dockerfile) でインストールしています。
 
 ## Installation
 
-1. GitHub リポジトリからクローンする: `git clone https://github.com/book000/server-backup-v2.git`
-2. `requirements.txt` から依存関係パッケージをインストールする: `pip install -U -r requirements.txt`
+1. リポジトリをクローンする: `git clone https://github.com/book000/server-backup-v2.git`
+2. 依存パッケージをインストールする: `pip install -U -r requirements.txt`
 
 ## Configuration
 
-### Local Settings
+設定ファイルは JSON で、デフォルトは `config.json` です (機密情報を含むため git の管理対象外です)。以下でデフォルト値の記載がないキーは必須で、未設定の場合はエラーで終了します。特に記載がない値は文字列です。
 
-デフォルトの設定ファイルは `config.json` です。明記していない場合文字列型で必須
-
-- `discord`: Discord 通知系設定
+- `name`: このバックアップセットの名前。空白と `/` は使えません。下記のデフォルトのディレクトリ名に使われます。
+- `discord`: Discord 通知設定
   - `token`: Bot トークン
-  - `channel`: 通知先チャンネル
-- `dir`: データ保存ディレクトリ設定
-  - `backup`: バックアップ保存先ディレクトリ (デフォルト: `backup/`)
-  - `logs`: ログファイル保存先ディレクトリ (デフォルト: `logs/`)
-- `db`: データベースバックアップ設定
-  - `enable`: データベースバックアップを有効にするか (boolean、デフォルト: false)
-  - `keep_days`: バックアップを保持する期間日数 (int、デフォルト: 30)
-  - `hostname`: ホスト名
-  - `port`: ポート番号
-  - `username`: ユーザー名
-  - `password`: パスワード
-  - `ignores`: データベース・テーブルの除外設定
-    - `db`: データベース名で含む場合除外 (list, デフォルト: [])
-    - `table`: テーブル名で含む場合除外 (list, デフォルト: [])
-- `full`: フルバックアップ設定
-  - `enable`: フルバックアップを有効にするか (boolean、デフォルト: false)
-  - `keep_days`: バックアップを保持する期間日数 (int、デフォルト: 30)
-  - `hostname`: ホスト名
-  - `port`: ポート番号
-  - `username`: ユーザー名
-  - `password`: パスワード
-  - `identity`: 公開鍵パス
-  - `passphrase`: 公開鍵のパスフレーズ
-  - `from`: バックアップするディレクトリ (デフォルト: `/`)
-  - `ignores`: 除外するディレクトリ・ファイル (list、デフォルト: `[]`)
+  - `channel`: 通知先チャンネルの ID
+  - `footer`: 通知のフッター文字列。キー自体が必須です (デフォルトなし)。JSON の `null` も拒否されます。
+- `dir`: データ保存ディレクトリ (存在しなければ作成。相対パスは実行時のカレントディレクトリ基準)
+  - `backup`: バックアップ保存先 (デフォルト: `/data/backups/<name>/`)
+  - `logs`: ログ保存先 (デフォルト: `/data/logs/<name>/`)
+- `db`: データベースバックアップ設定。`enable` 以外のキーは `enable` が true のときだけ読み込まれます。
+  - `enable`: データベースバックアップを有効にするか (boolean、デフォルト: `false`)
+  - `keep_days`: バックアップを保持する日数 (整数、デフォルト: `30`)。現状は削除処理が何も削除しないため、古いバックアップは自分で削除してください ([Known limitations](#known-limitations) を参照)。
+  - `hostname`: DB のホスト名
+  - `port`: DB のポート番号 (整数)
+  - `username`: DB のユーザー名
+  - `password`: DB のパスワード
+  - `ignores`: 除外設定
+    - `db`: 除外するデータベースのリスト (list、デフォルト: `[]`)。部分一致で判定され、データベース名がいずれかの要素に含まれていればスキップされます (例: 要素 `mysql` は `mysql` と `sql` をスキップ)。
+    - `table`: 除外するテーブルのリスト (list、デフォルト: `[]`)。判定は `db` と同じです。
+- `full`: フルバックアップ設定。`enable` 以外のキーは `enable` が true のときだけ読み込まれます。
+  - `enable`: フルバックアップを有効にするか (boolean、デフォルト: `false`)
+  - `keep_days`: バックアップを保持する日数 (整数、デフォルト: `30`)。現状は削除処理が `.tar.gz` を削除しないため、自分で削除してください ([Known limitations](#known-limitations) を参照)。
+  - `hostname`: バックアップ対象サーバのホスト名
+  - `port`: SSH のポート番号 (整数)
+  - `username`: SSH のユーザー名
+  - `identity`: SSH 秘密鍵のパス。必須で、実行のたびに `chmod 600` が適用されます。
+  - `passphrase`: 秘密鍵のパスフレーズ。必須です。
+  - `from`: リモートサーバ上のバックアップ対象ディレクトリ (デフォルト: `/`)
+  - `ignores`: 除外パターン。`rsync --exclude-from` に渡されます (list、デフォルト: `[]`)
 
 ### Server Settings
 
 #### DB Backup
 
-バックアップ用ユーザーアカウントには、以下の権限をグローバルで振る必要があります。
+バックアップ用ユーザーには、以下の権限をグローバルで付与してください。
 
-- データ: SELECT
-- データ: FILE
-- 構造: SHOW VIEW
-- 管理: SUPER
-- 管理: PROCESS
-- 管理: LOCK TABLES
+- SELECT
+- FILE
+- SHOW VIEW
+- SUPER
+- PROCESS
+- LOCK TABLES
 
 #### Full Backup
 
-バックアップは `rsync` で行われ、また全ファイルをバックアップするために `sudo` を用いています。  
-このため、tty なしでかつ `sudo rsync` をパスワード無しで利用できる必要があります。
+全ファイルを読み取るため、リモートサーバ上で `sudo` 経由の `rsync` を実行します。そのため SSH ユーザーは、TTY なしかつパスワードなしで `sudo rsync` を実行できる必要があります。
 
-以下の内容をリモートサーバの `sudoers` ファイルに `visudo` で追記してください。
+リモートサーバの `sudoers` ファイルに、`visudo` で以下を追記してください。
 
 ```
 Defaults!/usr/bin/rsync !requiretty
 USERNAME ALL=(ALL) NOPASSWD: /usr/bin/rsync
 ```
 
-`USERNAME` にはリモートサーバにログインするユーザ名を指定する必要があります。  
-この設定を行うと、万が一このアカウントで SSH ログインが成功してしまった場合 root (sudo) で閲覧できるすべてのファイルを取得できるようになります。セキュリティの問題を懸念するのであれば、この機能を利用しないことをお勧めします。
+`USERNAME` にはリモートサーバへのログインに使うユーザー名を指定します。このアカウントで SSH ログインできる人は、root が読み取れるすべてのファイルを取得できるようになります。セキュリティ上の懸念がある場合は、この機能を使わないでください。
+
+ホストキーは検証されません (`src/rsync.sh` の `StrictHostKeyChecking=no`)。
+
+## Usage
+
+```bash
+# 両方のバックアップを実行する (DB バックアップ、フルバックアップの順)
+python -m src -f config.json
+
+# どちらか一方だけ実行する
+python -m src -f config.json -m db
+python -m src -f config.json -m full
+```
+
+設定で無効にしているバックアップはスキップされます。失敗した場合は Discord に通知し、終了コード 1 で終了します。
+
+### Output layout
+
+```
+<dir.backup>/
+├── DB/<YYYY-MM-DD>/<database>/<table>.sql.gz
+└── FULL/
+    ├── latest/              # リモートの `from` ディレクトリのミラー
+    └── <YYYY-MM-DD>.tar.gz  # その日の実行で変更・削除されたファイル
+<dir.logs>/
+├── DB/<YYYY-MM-DD>.log
+└── FULL/<YYYY-MM-DD>.log
+```
+
+### Docker
+
+イメージは `$CONFIG_LOCATION` (デフォルト: `/data/config.json`) の設定ファイルで、DB バックアップ、フルバックアップの順に実行します。[docker-compose.yml](docker-compose.yml) はイメージをビルドし、次のホストパスをマウントします。
+
+| ホスト | コンテナ |
+|---|---|
+| `./configs/config.json` | `/data/config.json` |
+| `./configs/keys/id_rsa` | `/data/keys/identity-file` (`full.identity` にこのパスを指定) |
+| `./backups/` | `/data/backups/` |
+| `./logs/` | `/data/logs/` |
+
+```bash
+docker compose up
+```
+
+### systemd
+
+`SystemdFiles/install-systemd.sh` は `server-backup-v2.service` の作業ディレクトリを書き換え、service と timer を `/etc/systemd/system/` にコピーして、timer を有効化・開始します。timer は毎日 08:00 に実行されます。
+
+service は root で動作し、作業ディレクトリで `git pull` を実行したあと `venv/bin/python -m src` を実行します。事前にリポジトリ内に `venv` という名前の仮想環境を作成し、依存パッケージをインストールしておいてください。
+
+```bash
+./SystemdFiles/install-systemd.sh
+systemctl status server-backup-v2.timer
+```
+
+## Known limitations
+
+- 期限切れバックアップの削除処理が実際の名前と一致しません。DB バックアップでは日付ディレクトリのうち `.sql.gz` で終わるものだけを対象にし、フルバックアップでは `<YYYY-MM-DD>.tar.gz` をスキップします。古いバックアップは自動では削除されません。
+- DB バックアップの前回バックアップとの比較は機能しておらず、毎回すべてのテーブルをフルダンプのまま保持します。
+- `<YYYY-MM-DD>.tar.gz` は圧縮されていない tar アーカイブです。
 
 ## License
 
-このプロジェクトのライセンスは [MIT License](LICENSE) です。
+[MIT License](LICENSE)
