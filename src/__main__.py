@@ -13,26 +13,35 @@ from src.config import Config
 
 class BaseBackup:
     """
-    バックアップのベースクラス
+    Base class of backup jobs.
     """
 
     def process(self,
                 config: Config):
         """
-        バックアップ処理
+        Run the backup.
+
+        Args:
+            config (Config): Loaded configuration
         """
         raise NotImplementedError
 
 
 class DBBackup(BaseBackup):
     """
-    データベースバックアップ
+    Per-table MySQL/MariaDB dump: ``<backup>/DB/<YYYY-MM-DD>/<database>/<table>.sql.gz``.
     """
 
     def process(self,
                 config: Config):
         """
-        データベースバックアップ処理
+        Dump every table with ``mysqldump``, then run the expired-backup cleanup.
+
+        Does nothing when ``db.enable`` is false. Exits with status 1 after
+        notifying Discord on failure.
+
+        Args:
+            config (Config): Loaded configuration
         """
         TODAY = datetime.now().strftime('%Y-%m-%d')
         BACKUP_DIR = os.path.join(config.BACKUP_DIR, "DB", TODAY)
@@ -50,7 +59,7 @@ class DBBackup(BaseBackup):
 
         command = "ls -l | awk '{ print $9 }' | tail -n 1"
         result = subprocess.run(command, cwd=BACKUP_DIR, shell=True)
-        prev_date = None if result.returncode == 0 else result.stdout.decode("utf-8").strip()  # 前回バックアップした日付 (なければNone)
+        prev_date = None if result.returncode == 0 else result.stdout.decode("utf-8").strip()
         log(LOG_FILE, "[INFO] PrevDate: {}".format(prev_date))
 
         log(LOG_FILE, "[INFO] Fetch databases & tables")
@@ -182,13 +191,22 @@ class DBBackup(BaseBackup):
 
 class FullBackup(BaseBackup):
     """
-    全体ディレクトリ/ファイル逆差分バックアップ
+    Reverse-differential full backup over SSH and rsync.
+
+    ``<backup>/FULL/latest`` mirrors the remote; files changed or deleted by a run are moved
+    to ``<backup>/FULL/<YYYY-MM-DD>/`` and archived as ``<YYYY-MM-DD>.tar.gz``.
     """
 
     def process(self,
                 config: Config):
         """
-        データベースバックアップ処理
+        Run ``rsync.sh``, archive the day's changes with ``tar``, then run the expired-backup cleanup.
+
+        Does nothing when ``full.enable`` is false. Exits with status 1 after
+        notifying Discord on failure.
+
+        Args:
+            config (Config): Loaded configuration
         """
         TODAY = datetime.now().strftime('%Y-%m-%d')
         BACKUP_DIR = os.path.join(config.BACKUP_DIR, "FULL")

@@ -4,7 +4,11 @@ import os
 
 class Config:
     """
-    設定
+    Settings loaded from the JSON config file.
+
+    A key without a default value is required: ``getValue`` exits the process
+    when it is missing. Keys under ``db`` and ``full`` are only read when the
+    matching ``enable`` flag is true; otherwise the attributes are ``None``.
     """
     def __init__(self, filename: str = "config.json"):
         self.filename = filename
@@ -17,12 +21,12 @@ class Config:
             print("[ERROR] name cannot contain ' ' or '/'.")
             exit(1)
 
-        # 通知用 Discord Bot 設定
+        # Discord Bot settings for notifications
         self.DISCORD_TOKEN = self.getValue("discord.token")
         self.DISCORD_CHANNEL = self.getValue("discord.channel")
         self.DISCORD_FOOTER = self.getValue("discord.footer", None)
 
-        # バックアップ用とログ用のディレクトリ
+        # Backup and log directories (created if missing)
         self.BACKUP_DIR = self.getValue("dir.backup", "/data/backups/{0}/".format(self.NAME))
         if not self.BACKUP_DIR.endswith("/"):
             self.BACKUP_DIR += "/"
@@ -39,7 +43,7 @@ class Config:
         if not os.path.exists(self.LOG_DIR):
             os.makedirs(self.LOG_DIR)
 
-        # データベースバックアップ設定
+        # Database backup settings
         self.DB_ENABLE: bool = bool(self.getValue("db.enable", False))
         self.DB_KEEP_DAYS: int = int(self.getValue("db.keep_days", 30)) if self.DB_ENABLE else None
         self.DB_HOSTNAME = self.getValue("db.hostname") if self.DB_ENABLE else None
@@ -49,7 +53,7 @@ class Config:
         self.DB_IGNORES: list[str] = self.getValue("db.ignores.db", []) if self.DB_ENABLE else None
         self.DB_TABLE_IGNORES: list[str] = self.getValue("db.ignores.table", []) if self.DB_ENABLE else None
 
-        # 全体ディレクトリ/ファイルバックアップ (SSH)
+        # Full backup settings (SSH + rsync)
         self.FULL_ENABLE: bool = bool(self.getValue("full.enable", False))
         self.FULL_KEEP_DAYS: int = int(self.getValue("full.keep_days", 30)) if self.FULL_ENABLE else None
         self.FULL_HOSTNAME = self.getValue("full.hostname") if self.FULL_ENABLE else None
@@ -63,6 +67,18 @@ class Config:
     def getValue(self,
                  _key: str,
                  default_value=None):
+        """
+        Read a value from the config file, using a dot-separated key path.
+
+        Args:
+            _key (str): Key path such as ``discord.token``
+            default_value (optional): Value used when the key is missing.
+                With ``None`` the key is required and the process exits with
+                status 1 if it is absent or null.
+
+        Returns:
+            The configured value, or ``default_value`` if the key is missing
+        """
         with open(self.filename) as f:
             config = json.load(f)
         if "." in _key:
