@@ -92,7 +92,7 @@ class DBBackup(BaseBackup):
             f.write("port={0}\n".format(config.DB_PORT))
             f.write("user=\"{0}\"\n".format(config.DB_USERNAME))
             f.write("password=\"{0}\"".format(config.DB_PASSWORD))
-        os.chmod(os.path.join(BACKUP_DIR, "conf"), 0o644)
+        os.chmod(os.path.join(BACKUP_DIR, "conf"), 0o600)
         log(LOG_FILE, "[INFO] Created.")
 
         log(LOG_FILE, "[INFO] Starting backup")
