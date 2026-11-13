@@ -110,6 +110,8 @@ python -m src -f config.json -m full
 └── FULL/<YYYY-MM-DD>.log
 ```
 
+DB バックアップは、ダンプが直近の過去のバックアップと同一のテーブル (`Dump completed` の行は無視) を保持しません。そのため、日付ディレクトリにテーブルが存在しないことがあります。その場合は、そのテーブルを持つ最も新しい過去の日付ディレクトリを探してください。
+
 ### Docker
 
 イメージは `$CONFIG_LOCATION` (デフォルト: `/data/config.json`) の設定ファイルで、DB バックアップ、フルバックアップの順に実行します。[docker-compose.yml](docker-compose.yml) はイメージをビルドし、次のホストパスをマウントします。
@@ -139,7 +141,6 @@ systemctl status server-backup-v2.timer
 ## Known limitations
 
 - フルバックアップの期限切れ削除処理は `<YYYY-MM-DD>.tar.gz` をスキップするため、古いアーカイブは自動では削除されません。
-- DB バックアップの前回バックアップとの比較は機能しておらず、毎回すべてのテーブルをフルダンプのまま保持します。
 - `<YYYY-MM-DD>.tar.gz` は圧縮されていない tar アーカイブです。
 
 ## License

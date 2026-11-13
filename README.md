@@ -108,6 +108,8 @@ A backup that is disabled in the config is skipped. On a failure, the tool notif
 └── FULL/<YYYY-MM-DD>.log
 ```
 
+The DB backup does not keep a table whose dump is identical to its most recent earlier backup (ignoring the `Dump completed` line), so a table can be missing from a date directory. Look for it in the newest earlier date directory that has it.
+
 ### Docker
 
 The image runs the DB backup and then the full backup with the config file at `$CONFIG_LOCATION` (default: `/data/config.json`). [docker-compose.yml](docker-compose.yml) builds the image and mounts these host paths:
@@ -137,7 +139,6 @@ systemctl status server-backup-v2.timer
 ## Known limitations
 
 - The expired-backup cleanup of the full backup skips `<YYYY-MM-DD>.tar.gz` files, so old archives are not removed automatically.
-- The previous-backup comparison of the DB backup never takes effect, so every run keeps a full dump of every table.
 - `<YYYY-MM-DD>.tar.gz` is an uncompressed tar archive.
 
 ## License

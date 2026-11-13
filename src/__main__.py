@@ -1,14 +1,49 @@
 import os
+import re
 import shutil
 import subprocess
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
+from typing import Optional
 
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
 
 from src import byte_format, get_connection, get_directory_size, log, notify
 from src.config import Config
+
+
+def find_previous_backup(db_root: str,
+                         today: str,
+                         database: str,
+                         table: str) -> Optional[str]:
+    """
+    Find the newest dump of a table taken before ``today``.
+
+    The search is per table because a dump identical to its predecessor is
+    deleted, so the previous date directory may not contain the table.
+
+    Args:
+        db_root (str): ``<backup>/DB`` directory holding the date directories
+        today (str): Current run date as ``YYYY-MM-DD``; this and later dates are ignored
+        database (str): Database name
+        table (str): Table name
+
+    Returns:
+        Optional[str]: Path of ``<table>.sql.gz`` in the newest earlier date directory
+        that has it, or ``None`` when there is none.
+    """
+    dates = [
+        name for name in os.listdir(db_root)
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", name) and name < today
+    ]
+    for date in sorted(dates, reverse=True):
+        if not os.path.isdir(os.path.join(db_root, date)):
+            continue
+        path = os.path.join(db_root, date, database, table + ".sql.gz")
+        if os.path.exists(path):
+            return path
+    return None
 
 
 class BaseBackup:
@@ -56,11 +91,6 @@ class DBBackup(BaseBackup):
         if not config.DB_ENABLE:
             log(LOG_FILE, "[INFO] DBBackup is disabled")
             return
-
-        command = "ls -l | awk '{ print $9 }' | tail -n 1"
-        result = subprocess.run(command, cwd=BACKUP_DIR, shell=True)
-        prev_date = None if result.returncode == 0 else result.stdout.decode("utf-8").strip()
-        log(LOG_FILE, "[INFO] PrevDate: {}".format(prev_date))
 
         log(LOG_FILE, "[INFO] Fetch databases & tables")
         databases = {}
@@ -141,15 +171,26 @@ class DBBackup(BaseBackup):
                     error = True
                     continue
 
-                if prev_date is not None:
-                    diff_result = subprocess.run("zdiff -q --ignore-matching-lines=\"Dump completed\" {0} {1}".format(
-                        os.path.join(BACKUP_DIR, prev_date),
-                        backup_path
-                    ))
-                    if diff_result.returncode == 0:
+                prev_path = find_previous_backup(os.path.join(config.BACKUP_DIR, "DB"), TODAY, database, table)
+                if prev_path is not None:
+                    try:
+                        diff_result = subprocess.run(
+                            ["zdiff", "-q", "--ignore-matching-lines=^-- Dump completed", prev_path, backup_path]
+                        )
+                        diff_code = diff_result.returncode
+                        diff_error = "exit code {0}".format(diff_code)
+                    except OSError as e:
+                        diff_code = None
+                        diff_error = str(e)
+                    if diff_code == 0:
                         log(LOG_FILE, "[Info] Backup skipped. (No difference)")
                         os.remove(backup_path)
                         continue
+                    if diff_code != 1:
+                        log(LOG_FILE, "[Error] Comparison failed ({0}); keeping the dump: {1}".format(
+                            diff_error,
+                            backup_path
+                        ))
 
                 filesize = os.path.getsize(backup_path) if os.path.exists(backup_path) else 0
                 filesize_formatted = byte_format(filesize, 2)
