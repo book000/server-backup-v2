@@ -41,7 +41,7 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
   - `username`: DB user name
   - `password`: DB password
   - `ignores`: Exclusions
-    - `db`: Database exclusion list (list, default: `[]`). Matching is by substring: a database is skipped when its name is contained in any entry (for example, the entry `mysql` skips `mysql` and `sql`).
+    - `db`: Database exclusion list (list, default: `[]`). Matching is by substring: a database is skipped when any entry is contained in its name (for example, the entry `mysql` skips `mysql` and `mysql_backup`, but not `sql`).
     - `table`: Table exclusion list (list, default: `[]`). Same matching rule as `db`.
 - `full`: Full backup settings. The keys below `enable` are only read when `enable` is true.
   - `enable`: Enable the full backup (boolean, default: `false`)
