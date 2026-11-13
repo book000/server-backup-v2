@@ -175,12 +175,14 @@ class DBBackup(BaseBackup):
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
         for file in os.listdir(os.path.join(config.BACKUP_DIR, "DB")):
-            if not file.endswith(".sql.gz"):
-                continue
             file_path = os.path.join(config.BACKUP_DIR, "DB", file)
             if not os.path.isdir(file_path):
                 continue
-            file_date = datetime.strptime(file, "%Y-%m-%d")
+            try:
+                file_date = datetime.strptime(file, "%Y-%m-%d")
+            except ValueError:
+                log(LOG_FILE, "[INFO] Skipping non-date directory %s" % file)
+                continue
             if file_date >= datetime.now() - timedelta(days=config.DB_KEEP_DAYS):
                 continue
             log(LOG_FILE, "[INFO] Deleting %s" % file)

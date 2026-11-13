@@ -35,7 +35,7 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
   - `logs`: Log destination (default: `/data/logs/<name>/`)
 - `db`: Database backup settings. The keys below `enable` are only read when `enable` is true.
   - `enable`: Enable the database backup (boolean, default: `false`)
-  - `keep_days`: Days to keep backups (integer, default: `30`). The cleanup step does not currently delete anything, so prune old backups yourself (see [Known limitations](#known-limitations)).
+  - `keep_days`: Days to keep backups (integer, default: `30`). Date directories older than this are deleted after each backup run.
   - `hostname`: DB host name
   - `port`: DB port number (integer)
   - `username`: DB user name
@@ -136,7 +136,7 @@ systemctl status server-backup-v2.timer
 
 ## Known limitations
 
-- The expired-backup cleanup never matches the real names: for the DB backup it only looks at entries ending in `.sql.gz` among the date directories, and for the full backup it skips `<YYYY-MM-DD>.tar.gz` files. Old backups are not removed automatically.
+- The expired-backup cleanup of the full backup skips `<YYYY-MM-DD>.tar.gz` files, so old archives are not removed automatically.
 - The previous-backup comparison of the DB backup never takes effect, so every run keeps a full dump of every table.
 - `<YYYY-MM-DD>.tar.gz` is an uncompressed tar archive.
 
