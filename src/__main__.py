@@ -267,7 +267,7 @@ class FullBackup(BaseBackup):
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
         for file in os.listdir(BACKUP_DIR):
-            if len(file) != 10:
+            if len(file) not in (len("YYYY-MM-DD"), len("YYYY-MM-DD.tar.gz")):
                 continue
             file_path = os.path.join(BACKUP_DIR, file)
             if os.path.isfile(file_path) and file.endswith(".tar.gz"):
