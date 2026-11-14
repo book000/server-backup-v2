@@ -193,16 +193,16 @@ class DBBackup(BaseBackup):
         for database in databases:
             log(LOG_FILE, "[INFO] Database: %s" % database)
 
-            if next(filter(lambda x: database in x, config.DB_IGNORES), None) is not None:
-                log(LOG_FILE, "[INFO] Ignored: %s" % next(filter(lambda x: database in x, config.DB_IGNORES), None))
+            if next(filter(lambda x: x in database, config.DB_IGNORES), None) is not None:
+                log(LOG_FILE, "[INFO] Ignored: %s" % next(filter(lambda x: x in database, config.DB_IGNORES), None))
                 continue
 
             for table in databases[database]:
                 log(LOG_FILE, "[INFO] Table: %s" % table)
 
-                if next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None) is not None:
+                if next(filter(lambda x: x in table, config.DB_TABLE_IGNORES), None) is not None:
                     log(LOG_FILE,
-                        "[INFO] Ignored: %s" % next(filter(lambda x: table in x, config.DB_TABLE_IGNORES), None))
+                        "[INFO] Ignored: %s" % next(filter(lambda x: x in table, config.DB_TABLE_IGNORES), None))
                     continue
 
                 backup_path = os.path.join(BACKUP_DIR, database, table + ".sql.gz")
@@ -360,7 +360,7 @@ class FullBackup(BaseBackup):
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
         for file in os.listdir(BACKUP_DIR):
-            if len(file) != 10:
+            if len(file) not in (len("YYYY-MM-DD"), len("YYYY-MM-DD.tar.gz")):
                 continue
             file_path = os.path.join(BACKUP_DIR, file)
             if os.path.isfile(file_path) and file.endswith(".tar.gz"):

@@ -43,11 +43,11 @@ Linux サーバのバックアップを定期的に行うためのツールで�
   - `username`: DB のユーザー名
   - `password`: DB のパスワード
   - `ignores`: 除外設定
-    - `db`: 除外するデータベースのリスト (list、デフォルト: `[]`)。部分一致で判定され、データベース名がいずれかの要素に含まれていればスキップされます (例: 要素 `mysql` は `mysql` と `sql` をスキップ)。
+    - `db`: 除外するデータベースのリスト (list、デフォルト: `[]`)。部分一致で判定され、いずれかの要素がデータベース名に含まれていればスキップされます (例: 要素 `mysql` は `mysql` と `mysql_backup` をスキップし、`sql` はスキップしない)。
     - `table`: 除外するテーブルのリスト (list、デフォルト: `[]`)。判定は `db` と同じです。
 - `full`: フルバックアップ設定。`enable` 以外のキーは `enable` が true のときだけ読み込まれます。
   - `enable`: フルバックアップを有効にするか (boolean、デフォルト: `false`)
-  - `keep_days`: バックアップを保持する日数 (整数、デフォルト: `30`)。現状は削除処理が `.tar.gz` を削除しないため、自分で削除してください ([Known limitations](#known-limitations) を参照)。
+  - `keep_days`: バックアップを保持する日数 (整数、デフォルト: `30`)。期限切れの `<YYYY-MM-DD>.tar.gz` と日付ディレクトリは実行のたびに削除されます。
   - `hostname`: バックアップ対象サーバのホスト名
   - `port`: SSH のポート番号 (整数)
   - `username`: SSH のユーザー名
@@ -140,7 +140,6 @@ systemctl status server-backup-v2.timer
 
 ## Known limitations
 
-- フルバックアップの期限切れ削除処理は `<YYYY-MM-DD>.tar.gz` をスキップするため、古いアーカイブは自動では削除されません。
 - `<YYYY-MM-DD>.tar.gz` は圧縮されていない tar アーカイブです。
 
 ## License

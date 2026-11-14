@@ -41,11 +41,11 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
   - `username`: DB user name
   - `password`: DB password
   - `ignores`: Exclusions
-    - `db`: Database exclusion list (list, default: `[]`). Matching is by substring: a database is skipped when its name is contained in any entry (for example, the entry `mysql` skips `mysql` and `sql`).
+    - `db`: Database exclusion list (list, default: `[]`). Matching is by substring: a database is skipped when any entry is contained in its name (for example, the entry `mysql` skips `mysql` and `mysql_backup`, but not `sql`).
     - `table`: Table exclusion list (list, default: `[]`). Same matching rule as `db`.
 - `full`: Full backup settings. The keys below `enable` are only read when `enable` is true.
   - `enable`: Enable the full backup (boolean, default: `false`)
-  - `keep_days`: Days to keep backups (integer, default: `30`). The cleanup step does not currently delete the `.tar.gz` archives, so prune them yourself (see [Known limitations](#known-limitations)).
+  - `keep_days`: Days to keep backups (integer, default: `30`). Expired `<YYYY-MM-DD>.tar.gz` archives and date directories are deleted after each run.
   - `hostname`: Host name of the server to back up
   - `port`: SSH port number (integer)
   - `username`: SSH user name
@@ -138,7 +138,6 @@ systemctl status server-backup-v2.timer
 
 ## Known limitations
 
-- The expired-backup cleanup of the full backup skips `<YYYY-MM-DD>.tar.gz` files, so old archives are not removed automatically.
 - `<YYYY-MM-DD>.tar.gz` is an uncompressed tar archive.
 
 ## License
