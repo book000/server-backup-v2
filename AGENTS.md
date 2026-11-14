@@ -14,9 +14,9 @@ Guidance for AI coding agents and contributors. `CLAUDE.md` imports this file, a
 
 A Python tool that backs up Linux servers on a regular basis.
 
-- `DBBackup`: dumps every MySQL/MariaDB table to `<backup>/DB/<YYYY-MM-DD>/<database>/<table>.sql.gz`.
+- `DBBackup`: dumps every MySQL/MariaDB table to `<backup>/DB/<YYYY-MM-DD>/<database>/<table>.sql.gz`; a table whose dump is identical to its newest earlier dump is not saved again, so it can be missing from a date directory.
 - `FullBackup`: reverse differential backup over SSH and rsync into `<backup>/FULL/latest`, with each day's changes archived as `<YYYY-MM-DD>.tar.gz`.
-- Both report success or failure to a Discord channel and have a cleanup step that deletes backups older than `keep_days`; the full backup cleanup currently skips `<YYYY-MM-DD>.tar.gz` (see `Known limitations` in `README.md`), so do not assume old full-backup archives are removed.
+- Both report success or failure to a Discord channel and have a cleanup step that deletes backups older than `keep_days`; the full backup cleanup currently skips `<YYYY-MM-DD>.tar.gz` (see `Known limitations` in `README.md`), so do not assume old full-backup archives are removed. The DB cleanup keeps the newest dump of every table even when it is older than `keep_days`.
 
 ## Commands
 
@@ -32,7 +32,7 @@ CI only builds the Docker image (`.github/workflows/docker.yml`, reusable workfl
 
 ## Structure
 
-- `src/__main__.py`: CLI entry point (`-f` config path, `-m db|full`), `BaseBackup`, `DBBackup`, `FullBackup`.
+- `src/__main__.py`: CLI entry point (`-f` config path, `-m db|full`), `BaseBackup`, `DBBackup`, `FullBackup`, and the DB backup helpers `find_previous_backup`, `list_date_dirs`, `prune_expired_date_dir`.
 - `src/__init__.py`: helpers `get_connection`, `byte_format`, `log`, `get_directory_size`, `send_discord_message`, `notify`.
 - `src/config.py`: `Config` loads the JSON config into upper-case attributes. `getValue(key, default)` exits when a key without a default is missing, so a new required key needs no extra check. Keys under `db` and `full` are read only when the matching `enable` is true; otherwise the attributes are `None`.
 - `src/rsync.sh`: wraps `rsync` over SSH with `expect` to answer the key passphrase prompt. `FullBackup` runs it with `src/` as the working directory.

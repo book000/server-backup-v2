@@ -35,7 +35,7 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
   - `logs`: Log destination (default: `/data/logs/<name>/`)
 - `db`: Database backup settings. The keys below `enable` are only read when `enable` is true.
   - `enable`: Enable the database backup (boolean, default: `false`)
-  - `keep_days`: Days to keep backups (integer, default: `30`). Date directories older than this are deleted after each backup run.
+  - `keep_days`: Days to keep backups (integer, default: `30`). Dumps in date directories older than this are deleted after each backup run, except the newest dump of each table (see [Output layout](#output-layout)).
   - `hostname`: DB host name
   - `port`: DB port number (integer)
   - `username`: DB user name
@@ -108,7 +108,7 @@ A backup that is disabled in the config is skipped. On a failure, the tool notif
 └── FULL/<YYYY-MM-DD>.log
 ```
 
-The DB backup does not keep a table whose dump is identical to its most recent earlier backup (ignoring the `Dump completed` line), so a table can be missing from a date directory. Look for it in the newest earlier date directory that has it.
+The DB backup does not keep a table whose dump is identical to its most recent earlier backup (ignoring the `Dump completed` line), so a table can be missing from a date directory. Look for it in the newest earlier date directory that has it. The retention cleanup keeps the newest dump of every table even when its date directory is older than `db.keep_days`.
 
 ### Docker
 

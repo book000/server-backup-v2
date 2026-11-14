@@ -4,13 +4,32 @@ import shutil
 import subprocess
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional
 
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
 
 from src import byte_format, get_connection, get_directory_size, log, notify
 from src.config import Config
+
+
+def list_date_dirs(db_root: str) -> List[str]:
+    """
+    List the ``YYYY-MM-DD`` directories of the DB backup.
+
+    Args:
+        db_root (str): ``<backup>/DB`` directory holding the date directories
+
+    Returns:
+        List[str]: Directory names, oldest first. Entries that are not
+        zero-padded date directories and symlinks are ignored.
+    """
+    dirs = []
+    for name in sorted(os.listdir(db_root)):
+        path = os.path.join(db_root, name)
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", name) and os.path.isdir(path) and not os.path.islink(path):
+            dirs.append(name)
+    return dirs
 
 
 def find_previous_backup(db_root: str,
@@ -33,17 +52,44 @@ def find_previous_backup(db_root: str,
         Optional[str]: Path of ``<table>.sql.gz`` in the newest earlier date directory
         that has it, or ``None`` when there is none.
     """
-    dates = [
-        name for name in os.listdir(db_root)
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", name) and name < today
-    ]
-    for date in sorted(dates, reverse=True):
-        if not os.path.isdir(os.path.join(db_root, date)):
+    for date in reversed(list_date_dirs(db_root)):
+        if date >= today:
             continue
         path = os.path.join(db_root, date, database, table + ".sql.gz")
         if os.path.exists(path):
             return path
     return None
+
+
+def prune_expired_date_dir(db_root: str, date: str) -> int:
+    """
+    Delete the files of an expired date directory, except the newest dump of each table.
+
+    A table that did not change is not saved again, so its newest dump may
+    only exist in an old date directory and must outlive ``keep_days``.
+
+    Args:
+        db_root (str): ``<backup>/DB`` directory holding the date directories
+        date (str): Expired date directory name (``YYYY-MM-DD``)
+
+    Returns:
+        int: Number of dumps kept because no later date directory has the same table.
+    """
+    date_dir = os.path.join(db_root, date)
+    later_dirs = [name for name in list_date_dirs(db_root) if name > date]
+    kept = 0
+    for dirpath, _, filenames in os.walk(date_dir, topdown=False):
+        for name in filenames:
+            path = os.path.join(dirpath, name)
+            relative = os.path.relpath(path, date_dir)
+            has_newer = any(os.path.exists(os.path.join(db_root, later, relative)) for later in later_dirs)
+            if name.endswith(".sql.gz") and not has_newer:
+                kept += 1
+            else:
+                os.remove(path)
+        if not os.listdir(dirpath):
+            os.rmdir(dirpath)
+    return kept
 
 
 class BaseBackup:
@@ -65,12 +111,18 @@ class BaseBackup:
 class DBBackup(BaseBackup):
     """
     Per-table MySQL/MariaDB dump: ``<backup>/DB/<YYYY-MM-DD>/<database>/<table>.sql.gz``.
+
+    A dump identical to the newest earlier dump of the same table is deleted, so a
+    table can be missing from a date directory.
     """
 
     def process(self,
                 config: Config):
         """
         Dump every table with ``mysqldump``, then run the expired-backup cleanup.
+
+        The cleanup deletes dumps in date directories older than ``db.keep_days``,
+        except the newest dump of every table. It runs only after all dumps succeeded.
 
         Does nothing when ``db.enable`` is false. Exits with status 1 after
         notifying Discord on failure.
@@ -217,7 +269,7 @@ class DBBackup(BaseBackup):
         log(LOG_FILE, "[INFO] Deleting expired files")
         for file in os.listdir(os.path.join(config.BACKUP_DIR, "DB")):
             file_path = os.path.join(config.BACKUP_DIR, "DB", file)
-            if not os.path.isdir(file_path):
+            if not os.path.isdir(file_path) or os.path.islink(file_path):
                 continue
             try:
                 file_date = datetime.strptime(file, "%Y-%m-%d")
@@ -226,8 +278,8 @@ class DBBackup(BaseBackup):
                 continue
             if file_date >= datetime.now() - timedelta(days=config.DB_KEEP_DAYS):
                 continue
-            log(LOG_FILE, "[INFO] Deleting %s" % file)
-            shutil.rmtree(file_path)
+            kept = prune_expired_date_dir(os.path.join(config.BACKUP_DIR, "DB"), file)
+            log(LOG_FILE, "[INFO] Pruned %s (kept %d newest dumps)" % (file, kept))
 
         log(LOG_FILE, "[INFO] Deleted expired files")
 
