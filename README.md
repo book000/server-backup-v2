@@ -50,7 +50,8 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
   - `port`: SSH port number (integer)
   - `username`: SSH user name
   - `identity`: Path to the SSH private key. Required, and `chmod 600` is applied to it on every run.
-  - `passphrase`: Passphrase of the private key. Required.
+  - `passphrase`: Passphrase of the private key. Required. It is passed to `src/rsync.sh` through the `SSH_PASSPHRASE` environment variable, not on the command line.
+  - `host_key_checking`: How the remote host key is verified (`accept-new`, `yes` or `no`, default: `accept-new`). See [Full Backup](#full-backup).
   - `from`: Directory on the remote server to back up (default: `/`)
   - `ignores`: Patterns to exclude, passed to `rsync --exclude-from` (list, default: `[]`)
 
@@ -80,7 +81,15 @@ USERNAME ALL=(ALL) NOPASSWD: /usr/bin/rsync
 
 `USERNAME` must be the user name used to log in to the remote server. Anyone who logs in over SSH with this account can then read every file that root can read. If this is a security concern, do not use this feature.
 
-Host keys are not verified (`StrictHostKeyChecking=no` in `src/rsync.sh`).
+The remote host key is checked against `<dir.backup>/FULL/known_hosts` according to `full.host_key_checking`:
+
+- `accept-new` (default): an unknown host key is added on the first connection, and a changed key is refused.
+- `yes`: a host key that is not already in the file is refused. Create the file beforehand, for example with `ssh-keyscan -p <port> <hostname>`.
+- `no`: no host key verification is performed (the previous behavior).
+
+If the key of the server changes, the run fails and a failure notice is sent to Discord. After confirming that the change is legitimate, remove the stale line from `<dir.backup>/FULL/known_hosts`.
+
+A failed `rsync` run, including a partial transfer such as exit status 23 or 24, fails the backup and notifies Discord.
 
 ## Usage
 
@@ -102,6 +111,7 @@ A backup that is disabled in the config is skipped. On a failure, the tool notif
 ├── DB/<YYYY-MM-DD>/<database>/<table>.sql.gz
 └── FULL/
     ├── latest/              # mirror of the remote `from` directory
+    ├── known_hosts          # SSH host keys (see `full.host_key_checking`)
     └── <YYYY-MM-DD>.tar.gz  # files changed or deleted by that day's run
 <dir.logs>/
 ├── DB/<YYYY-MM-DD>.log

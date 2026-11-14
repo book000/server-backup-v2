@@ -52,7 +52,8 @@ Linux サーバのバックアップを定期的に行うためのツールで�
   - `port`: SSH のポート番号 (整数)
   - `username`: SSH のユーザー名
   - `identity`: SSH 秘密鍵のパス。必須で、実行のたびに `chmod 600` が適用されます。
-  - `passphrase`: 秘密鍵のパスフレーズ。必須です。
+  - `passphrase`: 秘密鍵のパスフレーズ。必須です。コマンドラインではなく環境変数 `SSH_PASSPHRASE` で `src/rsync.sh` に渡されます。
+  - `host_key_checking`: リモートのホストキーの検証方法 (`accept-new`、`yes`、`no`。デフォルト: `accept-new`)。[Full Backup](#full-backup) を参照してください。
   - `from`: リモートサーバ上のバックアップ対象ディレクトリ (デフォルト: `/`)
   - `ignores`: 除外パターン。`rsync --exclude-from` に渡されます (list、デフォルト: `[]`)
 
@@ -82,7 +83,15 @@ USERNAME ALL=(ALL) NOPASSWD: /usr/bin/rsync
 
 `USERNAME` にはリモートサーバへのログインに使うユーザー名を指定します。このアカウントで SSH ログインできる人は、root が読み取れるすべてのファイルを取得できるようになります。セキュリティ上の懸念がある場合は、この機能を使わないでください。
 
-ホストキーは検証されません (`src/rsync.sh` の `StrictHostKeyChecking=no`)。
+リモートのホストキーは、`full.host_key_checking` に従って `<dir.backup>/FULL/known_hosts` と照合されます。
+
+- `accept-new` (デフォルト): 未知のホストキーは初回接続時に追加し、変更されたキーは拒否します。
+- `yes`: ファイルに登録されていないホストキーは拒否します。たとえば `ssh-keyscan -p <port> <hostname>` で事前にファイルを作成してください。
+- `no`: ホストキーを検証しません。
+
+サーバーのキーが変わると実行が失敗し、Discord に失敗通知が送られます。変更が正当であることを確認したうえで、`<dir.backup>/FULL/known_hosts` から古い行を削除してください。
+
+`rsync` が失敗した場合は、終了ステータス 23 や 24 などの部分転送も含めてバックアップを失敗扱いにし、Discord に通知します。
 
 ## Usage
 
@@ -104,6 +113,7 @@ python -m src -f config.json -m full
 ├── DB/<YYYY-MM-DD>/<database>/<table>.sql.gz
 └── FULL/
     ├── latest/              # リモートの `from` ディレクトリのミラー
+    ├── known_hosts          # SSH のホストキー (`full.host_key_checking` を参照)
     └── <YYYY-MM-DD>.tar.gz  # その日の実行で変更・削除されたファイル
 <dir.logs>/
 ├── DB/<YYYY-MM-DD>.log

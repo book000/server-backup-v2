@@ -35,7 +35,7 @@ CI only builds the Docker image (`.github/workflows/docker.yml`, reusable workfl
 - `src/__main__.py`: CLI entry point (`-f` config path, `-m db|full`), `BaseBackup`, `DBBackup`, `FullBackup`.
 - `src/__init__.py`: helpers `get_connection`, `byte_format`, `log`, `get_directory_size`, `send_discord_message`, `notify`.
 - `src/config.py`: `Config` loads the JSON config into upper-case attributes. `getValue(key, default)` exits when a key without a default is missing, so a new required key needs no extra check. Keys under `db` and `full` are read only when the matching `enable` is true; otherwise the attributes are `None`.
-- `src/rsync.sh`: wraps `rsync` over SSH with `expect` to answer the key passphrase prompt. `FullBackup` runs it with `src/` as the working directory.
+- `src/rsync.sh`: wraps `rsync` over SSH with `expect` to answer the key passphrase prompt; the passphrase comes from the `SSH_PASSPHRASE` environment variable and the host key mode from `-k`. `FullBackup` runs it with `src/` as the working directory.
 - `SystemdFiles/`: `server-backup-v2.service` (runs as root, `git pull` then `venv/bin/python -m src`), the daily timer and the installer.
 - `Dockerfile`, `entrypoint.sh`: the container runs the `db` backup and then the `full` backup with `$CONFIG_LOCATION` (default `/data/config.json`).
 - `README.md` / `README-ja.md`: documents the config keys, so update them when you add or change one.
