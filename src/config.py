@@ -61,6 +61,10 @@ class Config:
         self.FULL_USERNAME = self.getValue("full.username") if self.FULL_ENABLE else None
         self.FULL_IDENTITY = self.getValue("full.identity") if self.FULL_ENABLE else None
         self.FULL_PASSPHRASE = self.getValue("full.passphrase") if self.FULL_ENABLE else None
+        self.FULL_HOST_KEY_CHECKING = self.getValue("full.host_key_checking", "accept-new") if self.FULL_ENABLE else None
+        if self.FULL_ENABLE and self.FULL_HOST_KEY_CHECKING not in ("accept-new", "yes", "no"):
+            print('[ERROR] full.host_key_checking must be one of accept-new, yes, no (got "{0}").'.format(self.FULL_HOST_KEY_CHECKING))
+            exit(1)
         self.FULL_FROM = self.getValue("full.from", "/") if self.FULL_ENABLE else None
         self.FULL_IGNORES: list[str] = self.getValue("full.ignores", []) if self.FULL_ENABLE else None
 

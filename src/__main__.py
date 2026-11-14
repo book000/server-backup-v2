@@ -324,9 +324,10 @@ class FullBackup(BaseBackup):
 
         log(LOG_FILE, "[INFO] Starting backup")
         identity_arg = "" if config.FULL_IDENTITY is None else f"-i '{config.FULL_IDENTITY}'"
-        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' {identity_arg} -p '{config.FULL_PASSPHRASE}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE} "
+        command = f"set -o pipefail; ./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' {identity_arg} -k '{config.FULL_HOST_KEY_CHECKING}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE} "
         print(command)
-        result = subprocess.run(command, shell=True, cwd=os.path.dirname(__file__))
+        result = subprocess.run(command, shell=True, executable="/bin/bash", cwd=os.path.dirname(__file__),
+                                env={**os.environ, "SSH_PASSPHRASE": str(config.FULL_PASSPHRASE)})
         if result.returncode != 0:
             log(LOG_FILE, "[Error] Backup (rsync) failed.")
             notify(config, ":x: Backup failed.", 0xFF0000, "rsync command failed.")
