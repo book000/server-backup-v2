@@ -1,11 +1,11 @@
 #!/bin/bash
 usage_exit() {
-    echo "Usage: $0 [-h host] [-r port] [-u user] [-i identity] [-k host_key_checking] [-f from] [-o output]" 1>&2
+    echo "Usage: $0 [-h host] [-r port] [-u user] [-i identity] [-k host_key_checking] [-f from] [-o output] [-n diff_name]" 1>&2
     exit 1
 }
 
 HOST_KEY_CHECKING=accept-new
-while getopts h:r:u:i:k:f:o: OPT
+while getopts h:r:u:i:k:f:o:n: OPT
 do
     case $OPT in
         h)  HOSTNAME=$OPTARG
@@ -22,6 +22,8 @@ do
             ;;
         o)  OUTPUT=$OPTARG
             ;;
+        n)  DIFF_NAME=$OPTARG
+            ;;
         \?) usage_exit
             ;;
     esac
@@ -37,13 +39,13 @@ if [ -z "${SSH_PASSPHRASE+x}" ]; then
     exit 1
 fi
 
-TODAY=$(date +%Y-%m-%d)
+DIFF_NAME=${DIFF_NAME:-$(date +%Y-%m-%d)}
 
-mkdir -p "${OUTPUT}/$TODAY"
+mkdir -p "${OUTPUT}/$DIFF_NAME"
 
 chmod 600 "${IDENTITY}"
 
-SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -o StrictHostKeyChecking=$HOST_KEY_CHECKING -o UserKnownHostsFile=${OUTPUT}/known_hosts -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$TODAY" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
+SSHCMD="rsync -arhvzsP --no-o --no-g --no-p --progress --delete --backup --exclude-from='${OUTPUT}/ignores' -e 'ssh -o StrictHostKeyChecking=$HOST_KEY_CHECKING -o UserKnownHostsFile=${OUTPUT}/known_hosts -p $PORT -i $IDENTITY' --rsync-path='sudo rsync' --backup-dir="${OUTPUT}/$DIFF_NAME" $USERNAME@$HOSTNAME:$FROM ${OUTPUT}/latest"
 expect -c "
     set timeout -1
     spawn sh -c \"$SSHCMD\"

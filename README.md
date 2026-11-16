@@ -45,7 +45,7 @@ The config file is JSON and defaults to `config.json` (it contains secrets and i
     - `table`: Table exclusion list (list, default: `[]`). Same matching rule as `db`.
 - `full`: Full backup settings. The keys below `enable` are only read when `enable` is true.
   - `enable`: Enable the full backup (boolean, default: `false`)
-  - `keep_days`: Days to keep backups (integer, default: `30`). Expired `<YYYY-MM-DD>.tar.gz` archives and date directories are deleted after each run.
+  - `keep_days`: Days to keep backups (integer, default: `30`). Expired date-prefixed archives and diff directories are deleted after each run.
   - `hostname`: Host name of the server to back up
   - `port`: SSH port number (integer)
   - `username`: SSH user name
@@ -112,11 +112,13 @@ A backup that is disabled in the config is skipped. On a failure, the tool notif
 └── FULL/
     ├── latest/              # mirror of the remote `from` directory
     ├── known_hosts          # SSH host keys (see `full.host_key_checking`)
-    └── <YYYY-MM-DD>.tar.gz  # files changed or deleted by that day's run
+    └── <YYYY-MM-DD>-<unique-id>.tar.gz  # files changed or deleted by one run
 <dir.logs>/
 ├── DB/<YYYY-MM-DD>.log
 └── FULL/<YYYY-MM-DD>.log
 ```
+
+Each full backup run creates a separate archive, including reruns on the same day. Legacy date-only archives are retained and expired by date as well.
 
 The DB backup does not keep a table whose dump is identical to its most recent earlier backup (ignoring the `Dump completed` line), so a table can be missing from a date directory. Look for it in the newest earlier date directory that has it. The retention cleanup keeps the newest dump of every table even when its date directory is older than `db.keep_days`.
 

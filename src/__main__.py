@@ -1,10 +1,12 @@
 import os
 import re
 import shutil
+import shlex
 import subprocess
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from typing import List, Optional
+from uuid import uuid4
 
 from pymysql import MySQLError
 from pymysql.cursors import DictCursor
@@ -291,7 +293,7 @@ class FullBackup(BaseBackup):
     Reverse-differential full backup over SSH and rsync.
 
     ``<backup>/FULL/latest`` mirrors the remote; files changed or deleted by a run are moved
-    to ``<backup>/FULL/<YYYY-MM-DD>/`` and archived as ``<YYYY-MM-DD>.tar.gz``.
+    to a unique date-prefixed directory and archived with the same name.
     """
 
     def process(self,
@@ -324,9 +326,25 @@ class FullBackup(BaseBackup):
             f.write("\n".join(config.FULL_IGNORES))
         log(LOG_FILE, "[INFO] Created.")
 
+        while True:
+            diff_name = TODAY + "-" + uuid4().hex
+            diff_path = os.path.join(BACKUP_DIR, diff_name)
+            archive_path = diff_path + ".tar.gz"
+            try:
+                os.mkdir(diff_path)
+            except FileExistsError:
+                continue
+            try:
+                with open(archive_path, "xb"):
+                    pass
+            except FileExistsError:
+                os.rmdir(diff_path)
+                continue
+            break
+
         log(LOG_FILE, "[INFO] Starting backup")
         identity_arg = "" if config.FULL_IDENTITY is None else f"-i '{config.FULL_IDENTITY}'"
-        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' {identity_arg} -k '{config.FULL_HOST_KEY_CHECKING}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' 2>&1 | tee -a {LOG_FILE} "
+        command = f"./rsync.sh -h '{config.FULL_HOSTNAME}' -r '{config.FULL_PORT}' -u '{config.FULL_USERNAME}' {identity_arg} -k '{config.FULL_HOST_KEY_CHECKING}' -f '{config.FULL_FROM}' -o '{BACKUP_DIR}' -n '{diff_name}' 2>&1 | tee -a {LOG_FILE} "
         print(command)
         result = run_pipeline(command, cwd=os.path.dirname(__file__),
                               env={**os.environ, "SSH_PASSPHRASE": str(config.FULL_PASSPHRASE)})
@@ -337,12 +355,12 @@ class FullBackup(BaseBackup):
 
         os.unlink(os.path.join(BACKUP_DIR, "ignores"))
 
-        today_size = get_directory_size(os.path.join(BACKUP_DIR, TODAY))
+        today_size = get_directory_size(diff_path)
 
         command = "tar --remove-file -czvf {0} {1} 2>&1 | tee -a {2}".format(
-            os.path.join(BACKUP_DIR, TODAY + ".tar.gz"),
-            os.path.join(BACKUP_DIR, TODAY + "/"),
-            LOG_FILE
+            shlex.quote(archive_path),
+            shlex.quote(diff_path + "/"),
+            shlex.quote(LOG_FILE)
         )
         result = run_pipeline(command, cwd=os.path.dirname(__file__))
         if result.returncode != 0:
@@ -352,7 +370,7 @@ class FullBackup(BaseBackup):
 
         log(LOG_FILE, "[INFO] Backup finished.")
         latest_size = get_directory_size(os.path.join(BACKUP_DIR, "latest"))
-        today_tar_size = os.path.getsize(os.path.join(BACKUP_DIR, TODAY + ".tar.gz"))
+        today_tar_size = os.path.getsize(archive_path)
 
         notify(config, ":o: Backup complete!", 0x008000, "Today size: {0} (tar.gz: {1})\nLatest size: {2}".format(
             byte_format(today_size, 2),
@@ -363,22 +381,22 @@ class FullBackup(BaseBackup):
         # Delete expired files
         log(LOG_FILE, "[INFO] Deleting expired files")
         for file in os.listdir(BACKUP_DIR):
-            if len(file) not in (len("YYYY-MM-DD"), len("YYYY-MM-DD.tar.gz")):
+            match = re.fullmatch(r"(\d{4}-\d{2}-\d{2})(?:-[0-9a-f]{32})?(\.tar\.gz)?", file)
+            if not match:
                 continue
-            file_path = os.path.join(BACKUP_DIR, file)
-            if os.path.isfile(file_path) and file.endswith(".tar.gz"):
-                file_date = datetime.strptime(file, "%Y-%m-%d.tar.gz")
-                if file_date >= datetime.now() - timedelta(days=config.FULL_KEEP_DAYS):
-                    continue
-                log(LOG_FILE, "[INFO] Deleting file %s" % file)
-                os.remove(file_path)
-            if not os.path.isdir(file_path):
+            try:
+                file_date = datetime.strptime(match.group(1), "%Y-%m-%d")
+            except ValueError:
                 continue
-            file_date = datetime.strptime(file, "%Y-%m-%d")
             if file_date >= datetime.now() - timedelta(days=config.FULL_KEEP_DAYS):
                 continue
-            log(LOG_FILE, "[INFO] Deleting dir %s" % file)
-            shutil.rmtree(file_path)
+            file_path = os.path.join(BACKUP_DIR, file)
+            if os.path.isfile(file_path) and match.group(2):
+                log(LOG_FILE, "[INFO] Deleting file %s" % file)
+                os.remove(file_path)
+            elif os.path.isdir(file_path) and not os.path.islink(file_path) and not match.group(2):
+                log(LOG_FILE, "[INFO] Deleting dir %s" % file)
+                shutil.rmtree(file_path)
 
         log(LOG_FILE, "[INFO] Deleted expired files")
 

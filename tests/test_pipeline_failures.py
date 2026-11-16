@@ -76,7 +76,6 @@ class PipelineFailureTest(unittest.TestCase):
     def test_tar_failure_is_reported_and_keeps_old_archive(self):
         self.fake_executable("tar", 'echo "tar: boom" >&2\nexit 2')
         old_archive = self.touch("FULL", EXPIRED + ".tar.gz")
-        os.makedirs(os.path.join(self.config.BACKUP_DIR, "FULL", TODAY))
         real_run_pipeline = run_pipeline
 
         def fake_rsync(command, **kwargs):

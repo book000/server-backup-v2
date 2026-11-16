@@ -15,7 +15,7 @@ Guidance for AI coding agents and contributors. `CLAUDE.md` imports this file, a
 A Python tool that backs up Linux servers on a regular basis.
 
 - `DBBackup`: dumps every MySQL/MariaDB table to `<backup>/DB/<YYYY-MM-DD>/<database>/<table>.sql.gz`; a table whose dump is identical to its newest earlier dump is not saved again, so it can be missing from a date directory.
-- `FullBackup`: reverse differential backup over SSH and rsync into `<backup>/FULL/latest`, with each day's changes archived as `<YYYY-MM-DD>.tar.gz`.
+- `FullBackup`: reverse differential backup over SSH and rsync into `<backup>/FULL/latest`, with each run's changes archived as `<YYYY-MM-DD>-<unique-id>.tar.gz`; legacy date-only archives are also subject to retention cleanup.
 - Both report success or failure to a Discord channel and have a cleanup step that deletes backups older than `keep_days`. The DB cleanup keeps the newest dump of every table even when it is older than `keep_days`.
 
 ## Commands
